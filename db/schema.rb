@@ -10,8 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 0) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_24_043416) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "employees", force: :cascade do |t|
+    t.decimal "annual_salary"
+    t.string "country"
+    t.datetime "created_at", null: false
+    t.string "currency"
+    t.string "department"
+    t.string "email"
+    t.string "employee_code"
+    t.string "employment_status"
+    t.string "first_name"
+    t.string "job_title"
+    t.date "joining_date"
+    t.string "last_name"
+    t.datetime "updated_at", null: false
+  end
 end
