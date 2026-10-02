@@ -51,13 +51,20 @@ RSpec.describe Employee, type: :model do
       )
     end
 
-    it "requires a three-character currency code" do
-      employee.currency = "US"
+    it "requires a supported currency" do
+      employee = build(:employee, currency: "XX")
 
       expect(employee).not_to be_valid
       expect(employee.errors[:currency]).to include(
-        "is the wrong length (should be 3 characters)"
+        "is not included in the list"
       )
+    end
+
+    it "requires a supported currency" do
+      employee = build(:employee, currency: "XYZ")
+
+      expect(employee).not_to be_valid
+      expect(employee.errors[:currency]).to include("is not included in the list")
     end
   end
 end

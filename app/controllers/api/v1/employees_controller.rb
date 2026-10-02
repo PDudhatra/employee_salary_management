@@ -54,6 +54,76 @@ module Api
         }
       end
 
+      def show
+        employee = Employee.find(params[:id])
+
+        render json: {
+          data: employee.as_json(
+            only: %i[
+              id
+              employee_code
+              first_name
+              last_name
+              email
+              country
+              department
+              job_title
+              employment_status
+              joining_date
+              annual_salary
+              currency
+            ]
+          )
+        }
+      end
+      def create
+        employee = Employee.new(employee_params)
+
+        if employee.save
+          render json: {
+            data: employee.as_json(
+              only: %i[
+                id employee_code first_name last_name email country department
+                job_title employment_status joining_date annual_salary currency
+              ]
+            )
+          }, status: :created
+        else
+          render json: {
+            errors: employee.errors.full_messages
+          }, status: :unprocessable_entity
+        end
+      end
+      
+      def update
+        employee = Employee.find(params[:id])
+
+        if employee.update(employee_params)
+          render json: {
+            data: employee.as_json(
+              only: %i[
+                id
+                employee_code
+                first_name
+                last_name
+                email
+                country
+                department
+                job_title
+                employment_status
+                joining_date
+                annual_salary
+                currency
+              ]
+            )
+          }
+        else
+          render json: {
+            errors: employee.errors.full_messages
+          }, status: :unprocessable_entity
+        end
+      end
+
       private
 
       def apply_search(scope)
@@ -74,6 +144,7 @@ module Api
         scope = scope.where(country: params[:country]) if params[:country].present?
         scope = scope.where(department: params[:department]) if params[:department].present?
         scope = scope.where(employment_status: params[:status]) if params[:status].present?
+        scope = scope.where(currency: params[:currency]) if params[:currency].present?
 
         scope
       end
@@ -94,6 +165,22 @@ module Api
 
         [[requested, 1].max, MAX_PER_PAGE].min
       end
+
+      def employee_params
+  params.require(:employee).permit(
+    :employee_code,
+    :first_name,
+    :last_name,
+    :email,
+    :country,
+    :department,
+    :job_title,
+    :employment_status,
+    :joining_date,
+    :annual_salary,
+    :currency
+  )
+end
     end
   end
 end

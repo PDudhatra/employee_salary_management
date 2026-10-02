@@ -129,4 +129,148 @@ RSpec.describe "Employees API", type: :request do
       expect(body["pagination"]["per_page"]).to eq(100)
     end
   end
+
+  describe "GET /api/v1/employees/:id" do
+    let!(:employee) { create(:employee) }
+
+    it "returns the requested employee" do
+      get "/api/v1/employees/#{employee.id}"
+
+      expect(response).to have_http_status(:ok)
+
+      body = JSON.parse(response.body)
+
+      expect(body["data"]["id"]).to eq(employee.id)
+      expect(body["data"]["employee_code"]).to eq(employee.employee_code)
+      expect(body["data"]["email"]).to eq(employee.email)
+    end
+  end
+
+  describe "PATCH /api/v1/employees/:id" do
+    let!(:employee) { create(:employee, annual_salary: 50_000) }
+
+    it "updates the employee salary" do
+      patch "/api/v1/employees/#{employee.id}",
+        params: {
+          employee: {
+            annual_salary: 75_000
+          }
+        }
+
+      expect(response).to have_http_status(:ok)
+
+      employee.reload
+
+      expect(employee.annual_salary.to_f).to eq(75_000)
+    end
+
+    it "rejects a negative salary" do
+      patch "/api/v1/employees/#{employee.id}",
+        params: {
+          employee: {
+            annual_salary: -100
+          }
+        }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "returns 404 for a missing employee" do
+      patch "/api/v1/employees/999999",
+        params: {
+          employee: {
+          annual_salary: 75_000
+        }
+      }
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "POST /api/v1/employees" do
+    let(:valid_attributes) do
+      {
+        employee_code: "EMP99999",
+        first_name: "John",
+        last_name: "Smith",
+        email: "john.smith@acme.example.com",
+        country: "India",
+        department: "Engineering",
+        job_title: "Software Engineer",
+        employment_status: "active",
+        joining_date: "2026-09-01",
+        annual_salary: 1_500_000,
+        currency: "INR"
+      }
+    end
+
+    it "creates an employee" do
+      expect {
+        post "/api/v1/employees",
+             params: { employee: valid_attributes },
+             as: :json
+      }.to change(Employee, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+
+      body = JSON.parse(response.body)
+
+      expect(body["data"]["employee_code"]).to eq("EMP99999")
+      expect(body["data"]["email"]).to eq("john.smith@acme.example.com")
+    end
+
+    it "returns validation errors for invalid data" do
+      post "/api/v1/employees",
+           params: {
+             employee: valid_attributes.merge(
+               annual_salary: -100
+             )
+           },
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+
+      body = JSON.parse(response.body)
+
+      expect(body["errors"]).to include(
+        "Annual salary must be greater than or equal to 0"
+      )
+    end
+
+    it "does not create an employee with a duplicate email" do
+      create(
+        :employee,
+        employee_code: "EMP88888",
+        email: "john.smith@acme.example.com"
+      )
+
+      post "/api/v1/employees",
+           params: { employee: valid_attributes },
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+
+      body = JSON.parse(response.body)
+
+      expect(body["errors"]).to include("Email has already been taken")
+    end
+
+    it "does not create an employee with a duplicate employee code" do
+      create(
+        :employee,
+        employee_code: "EMP99999",
+        email: "another.employee@acme.example.com"
+      )
+
+      post "/api/v1/employees",
+           params: { employee: valid_attributes },
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+
+      body = JSON.parse(response.body)
+
+      expect(body["errors"]).to include("Employee code has already been taken")
+    end
+  end
 end
